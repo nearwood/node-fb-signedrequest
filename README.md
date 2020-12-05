@@ -1,7 +1,7 @@
 
 Parses Facebook's signed requests in pure Node.js.
 
-Translation of Facebooks PHP Example:
+Translation of [Facebook's PHP Example](https://developers.facebook.com/docs/apps/delete-data#data-deletion-request-callback):
 
 ```PHP
 <?php
@@ -45,4 +45,19 @@ function base64_url_decode($input) {
   return base64_decode(strtr($input, '-_', '+/'));
 }
 ?>
+```
+
+## Tests
+
+Uses jest (as a dev dependancy -- so it doesn't count 😀)
+
+`npm test` or `npm test --coverage`
+
+```
+----------|---------|----------|---------|---------|-------------------
+File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------|---------|----------|---------|---------|-------------------
+All files |     100 |      100 |     100 |     100 |                  
+ index.js |     100 |      100 |     100 |     100 |                  
+----------|---------|----------|---------|---------|-------------------
 ```
