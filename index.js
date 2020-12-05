@@ -1,48 +1,40 @@
 const crypto = require('crypto');
 
-// export default const verifyFbSignature = (secret, data) => {
+module.exports.verifyFbSignature = function verifyFbSignature(signedRequest, secret) {
+  if (typeof signedRequest !== 'string') {
+    throw new Error("Invalid argument: signedRequest");
+  }
 
-// };
+  if (typeof secret !== 'string') {
+    throw new Error("Invalid argument: secret");
+  }
 
-const appSecret = 'abc123';
-const hmac1 = crypto.createHmac('sha256', appSecret);
-const hmac2 = crypto.createHmac('sha256', appSecret);
+  try {
+    const [signatureReceived, encodedPayload] = signedRequest.split('.', 2);
+    const payload = b64decode(encodedPayload)
+    const data = JSON.parse(payload);
 
-// const verifier = crypto.createVerify('sha256');
-// const signer = crypto.createSign('sha256');
-
-const testData = JSON.stringify({
-  "algorithm": "HMAC-SHA256",
-  "expires": 1291840400,
-  "issued_at": 1291836800,
-  "user_id": "218471"
-});
-
-hmac1.update(testData);
-const sig1 = hmac1.digest('base64');
-
-const signedRequest = `${sig1}.${b64encode(testData)}`; //req.body.signed_request
-
-console.log(signedRequest);
-
-
-const [encodedSig, payload] = signedRequest.split('.', 2);
-const sig = b64decode(encodedSig);
-const data = JSON.parse(b64decode(payload));
-
-console.log('sig,data:', encodedSig, data);
-
-hmac2.update(JSON.stringify(data));
-const newSig = hmac2.digest('base64');
-
-console.log("Are equal:", encodedSig === newSig);
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(payload);
+    const expectedSignature = hmac.digest('base64');
+    if (signatureReceived === expectedSignature) {
+      return data;
+    } else {
+      throw new Error("Signature mismatch");
+    }
+  } catch (err) {
+    throw new Error("Could not parse signed request", err);
+  }
+};
 
 function b64decode(data) {
   const buff = Buffer.from(data, 'base64');
   return buff.toString('ascii');
 }
+module.exports.b64decode = b64decode;
 
 function b64encode(text) {
   const buff = Buffer.from(text, 'ascii'); //utf8
   return buff.toString('base64');
 }
+module.exports.b64encode = b64encode;
