@@ -1,11 +1,11 @@
 const crypto = require('crypto');
 
-module.exports.verifyFbSignature = function verifyFbSignature(signedRequest, secret) {
-  if (typeof signedRequest !== 'string') {
+module.exports.parseSignedRequest = function parseSignedRequest(signedRequest, secret) {
+  if (!signedRequest || typeof signedRequest !== 'string') {
     throw new Error("Invalid argument: signedRequest");
   }
 
-  if (typeof secret !== 'string') {
+  if (!secret || typeof secret !== 'string') {
     throw new Error("Invalid argument: secret");
   }
 
@@ -14,16 +14,16 @@ module.exports.verifyFbSignature = function verifyFbSignature(signedRequest, sec
     const payload = b64decode(encodedPayload)
     const data = JSON.parse(payload);
 
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(payload);
+    const hmac = crypto.createHmac('sha256', secret).update(payload);
     const expectedSignature = hmac.digest('base64');
+
     if (signatureReceived === expectedSignature) {
       return data;
     } else {
       throw new Error("Signature mismatch");
     }
   } catch (err) {
-    throw new Error("Could not parse signed request", err);
+    throw new Error(`Could not parse signed request: ${err}`);
   }
 };
 

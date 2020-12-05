@@ -1,24 +1,55 @@
 const crypto = require('crypto');
-const { verifyFbSignature, b64encode, b64decode } = require('./index');
+const { parseSignedRequest, b64encode } = require('./index');
 
 const appSecret = 'abc123';
-const testObj = {
-  "algorithm": "HMAC-SHA256",
-  "expires": 1291840400,
-  "issued_at": 1291836800,
-  "user_id": "218471"
-};
-const testData = JSON.stringify(testObj);
 
-describe('sig check', () => {
-  it('checks sig', () => {
-    const hmac1 = crypto.createHmac('sha256', appSecret);
+let testObj, testData;
 
-    hmac1.update(testData);
-    const sig1 = hmac1.digest('base64');
+describe('parseSignedRequest', () => {
+  beforeEach(() => {
+    testObj = {
+      "algorithm": "HMAC-SHA256",
+      "expires": 1291840400,
+      "issued_at": 1291836800,
+      "user_id": "218471"
+    };
+    testData = JSON.stringify(testObj);
+  });
+
+  it('Works with test data', () => {
+    const hmac = crypto.createHmac('sha256', appSecret).update(testData);
+    const sig1 = hmac.digest('base64');
 
     const signedRequest = `${sig1}.${b64encode(testData)}`; //req.body.signed_request
-    const data = verifyFbSignature(signedRequest, appSecret);
+    const data = parseSignedRequest(signedRequest, appSecret);
     expect(data).toMatchObject(testObj);
+  });
+
+  it('Fails with altered test data', () => {
+    const hmac = crypto.createHmac('sha256', appSecret).update(testData + '\0');
+    const sig1 = hmac.digest('base64');
+
+    const signedRequest = `${sig1}.${b64encode(testData)}`;
+
+    expect(() => parseSignedRequest(signedRequest, appSecret)).toThrow(/parse/i);
+  });
+
+  it('Fails with invalid signature', () => {
+    const hmac = crypto.createHmac('sha256', appSecret).update(testData);
+    const sig1 = hmac.digest('base64');
+
+    const signedRequest = `${sig1 + '='}.${b64encode(testData)}`;
+
+    expect(() => parseSignedRequest(signedRequest, appSecret)).toThrow(/signature/i);
+  });
+
+  it('Fails with invalid arguments', () => {
+    const fakeRequest = 'dead.beef';
+    expect(() => parseSignedRequest()).toThrow(/argument/i);
+    expect(() => parseSignedRequest(fakeRequest)).toThrow(/argument/i);
+    expect(() => parseSignedRequest(fakeRequest, '')).toThrow(/argument/i);
+    expect(() => parseSignedRequest(fakeRequest, appSecret)).toThrow(/parse/i);
+    expect(() => parseSignedRequest('', appSecret)).toThrow(/argument/i);
+    expect(() => parseSignedRequest(undefined, appSecret)).toThrow(/argument/i);
   });
 });
